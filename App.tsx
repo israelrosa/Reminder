@@ -1,21 +1,42 @@
+import {
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from '@expo-google-fonts/poppins';
+import { Raleway_400Regular } from '@expo-google-fonts/raleway';
+import { AppLoading } from 'expo';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ThemeProvider } from 'styled-components';
 
-export default function App() {
+import { databaseInit } from './src/database/init';
+import Router from './src/routes';
+import { theme } from './src/styles/theme';
+
+const App: React.FC = () => {
+  const [fontsLoaded] = useFonts({
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Raleway_400Regular,
+  });
+
+  useEffect(() => {
+    databaseInit();
+  }, []);
+
+  if (!fontsLoaded) {
+    return <AppLoading />;
+  }
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <>
+      <ThemeProvider theme={theme}>
+        <Router />
+      </ThemeProvider>
+      <StatusBar backgroundColor="#7E84FF" style="light" />
+    </>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
