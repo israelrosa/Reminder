@@ -9,16 +9,17 @@ export default class ScheculeService {
 
   private static db: WebSQLDatabase = databaseConnection.getConnection();
 
-  static async create(schedule: Schedule): Promise<Schedule> {
+  static create(schedule: Schedule): Promise<Schedule> {
     const newSchedule = schedule;
     return new Promise((resolve, reject) =>
       this.db.transaction(
         (tx) => {
           tx.executeSql(
-            `INSERT INTO ${this.table} (title, description, year, month, day, timestamp) VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ${this.table} (title, description, done, year, month, day, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
               schedule.title,
               schedule.description,
+              schedule.done,
               schedule.year,
               schedule.month,
               schedule.day,
@@ -35,7 +36,7 @@ export default class ScheculeService {
     );
   }
 
-  static async findAll(
+  static findAllByDate(
     year: number,
     month: number,
     day: number,
@@ -44,8 +45,23 @@ export default class ScheculeService {
       this.db.transaction(
         (tx) => {
           tx.executeSql(
-            `SELECT a.id, a.title, a.description, a.year, a.month, a.day, a.timestamp, b.description AS todo_description, b.done FROM ${this.table} as a LEFT JOIN todos as b on a.id = b.schedule_id where a.year = ? AND a.month = ? AND a.day = ? ORDER BY a.timestamp ASC`,
+            `SELECT a.id, a.title, a.description, a.done, a.year, a.month, a.day, a.timestamp, b.description AS todo_description, b.done as todo_done FROM ${this.table} as a LEFT JOIN todos as b on a.id = b.schedule_id where a.year = ? AND a.month = ? AND a.day = ? ORDER BY a.timestamp ASC`,
             [year, month, day],
+            (_, rows) => resolve(JSON.stringify(rows)),
+          );
+        },
+        (err) => console.log(`error:${err}`),
+      ),
+    );
+  }
+
+  static findAll(): Promise<string> {
+    return new Promise((resolve, reject) =>
+      this.db.transaction(
+        (tx) => {
+          tx.executeSql(
+            `SELECT a.id, a.title, a.description, a.done, a.year, a.month, a.day, a.timestamp, b.description AS todo_description, b.done as todo_done FROM ${this.table} as a LEFT JOIN todos as b on a.id = b.schedule_id ORDER BY a.timestamp ASC`,
+            [],
             (_, rows) => resolve(JSON.stringify(rows)),
           );
         },
@@ -66,10 +82,20 @@ export default class ScheculeService {
     );
   }
 
-  static delete(id: number): void {
-    this.db.transaction((tx) =>
-      tx.executeSql(`DELETE FROM ${this.table} WHERE id = ?`, [id]),
-    );
+  static async delete(id: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      this.db.transaction(
+        (tx) =>
+          tx.executeSql(
+            `DELETE FROM ${this.table} WHERE id = ?`,
+            [id],
+            (_, { rowsAffected }) => {
+              resolve(rowsAffected);
+            },
+          ),
+        (err) => console.log(err),
+      );
+    });
   }
 
   static update(schedule: Schedule): Promise<SQLResultSet> {

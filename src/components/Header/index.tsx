@@ -66,6 +66,7 @@ const Header: React.FC<Props> = ({
                 fontFamily: 'Poppins_700Bold',
                 color: 'white',
                 textAlign: 'center',
+                maxWidth: 250,
               }}
             />
           ) : (

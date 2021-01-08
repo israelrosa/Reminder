@@ -28,6 +28,7 @@ const Input: React.FC<InputProps> = ({ name, ...rest }) => {
       ref={inputRef}
       placeholderTextColor={theme.secondary}
       defaultValue={defaultValue}
+      multiline
       onChangeText={(text) => {
         inputRef.current.value = text;
       }}

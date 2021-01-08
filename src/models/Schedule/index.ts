@@ -2,6 +2,7 @@ import Todo from '../Todo';
 
 interface CreateSchedule {
   title: string;
+  done?: number;
   timestamp: string;
   description?: string;
   year: number;
@@ -16,6 +17,8 @@ export default class Schedule {
   title: string;
 
   description?: string;
+
+  done: number;
 
   todos: Todo[];
 
@@ -34,12 +37,14 @@ export default class Schedule {
     month,
     year,
     description,
+    done,
     id,
   }: CreateSchedule) {
     this.id = id;
     this.title = title;
     this.description = description;
     this.timestamp = timestamp;
+    this.done = done ?? 0;
     this.day = day;
     this.month = month;
     this.year = year;

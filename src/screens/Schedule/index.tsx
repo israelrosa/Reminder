@@ -4,7 +4,6 @@ import { format, toDate } from 'date-fns';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useReducer, useState } from 'react';
 import { FlatList, StatusBar as st } from 'react-native';
-import DraggableFlatList from 'react-native-draggable-flatlist';
 
 import CreateButton from '../../components/CreateButton';
 import Header from '../../components/Header';
@@ -22,6 +21,7 @@ interface ScheduleContent {
   id: number;
   title: string;
   description: string;
+  done: number;
   todos: ToDos[];
   timestamp: string;
   year: number;
@@ -44,14 +44,13 @@ const Schedule: React.FC = () => {
 
   useEffect(() => {
     (async (): Promise<void> => {
-      const data = await SchedulesController.showAll(
+      const data = await SchedulesController.showAllByDate(
         date.getFullYear(),
         date.getMonth() + 1,
         date.getDate(),
       );
       if (data) {
         const schedule = JSON.parse(data);
-        // console.log(schedule);
 
         setSchedules(schedule);
       }
@@ -78,6 +77,16 @@ const Schedule: React.FC = () => {
       dispatch({ type: 'CHANGE_DATE', date: newDate });
     }
   };
+
+  const handleDeleteSchedule = async (id: number): Promise<void> => {
+    await SchedulesController.delete(id).then(() => {
+      const newSchedule = schedules.slice();
+      const index = newSchedule.findIndex((schedule) => schedule.id === id);
+      newSchedule.splice(index, 1);
+      setSchedules(newSchedule);
+    });
+    // .catch((err) => console.log(err));
+  };
   return (
     <Container marginTop={st.currentHeight}>
       <Header
@@ -94,15 +103,17 @@ const Schedule: React.FC = () => {
           onChange={(value, newDate) => handleChangeDate(newDate)}
         />
       )}
-      <DraggableFlatList
+      <FlatList
         data={schedules}
         renderItem={({ item }) => (
           <Task
+            id={item.id}
             title={item.title}
             date={format(new Date(toDate(Number(item.timestamp))), 'p')}
             isDisabled
             description={item.description}
             ToDoArrayData={item.todos}
+            handleDeleteTask={handleDeleteSchedule}
           />
         )}
         keyExtractor={(item) => item.id.toString()}

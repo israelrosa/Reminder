@@ -2,27 +2,30 @@ import styled from 'styled-components/native';
 
 export const Container = styled.View`
   background-color: #fff;
-  margin: 5px;
   border-radius: 30px;
-  overflow: visible;
+  flex-direction: row;
+  overflow: hidden;
+  max-height: 150px;
+  margin-top: 15px;
 `;
 
-export const DeleteContainer = styled.View`
-  position: absolute;
-  height: 50px;
-  width: 50px;
+export const DateContainer = styled.View`
+  background-color: blue;
   justify-content: center;
   align-items: center;
-  top: 50%;
-  left: -60px;
 `;
 
-export const Header = styled.View`
-  width: 100%;
-  flex-direction: row;
+export const DateText = styled.Text`
+  color: white;
+`;
+
+export const Content = styled.View`
+  flex: 1;
+`;
+
+export const Percentage = styled.View`
+  justify-content: center;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
 `;
 
 export const Title = styled.Text`
@@ -31,19 +34,15 @@ export const Title = styled.Text`
   font-size: 18px;
 `;
 
-export const DateTime = styled.Text`
-  color: ${(props) => props.theme.primary};
-  font-family: 'Poppins_500Medium';
-  font-size: 12px;
-`;
-
-export const Content = styled.View`
-  flex: 1;
-`;
-
 export const Description = styled.Text`
   color: ${(props) => props.theme.secondary};
   font-family: 'Raleway_400Regular';
   font-size: 14px;
   margin-bottom: 5px;
+`;
+
+export const ProgressText = styled.Text`
+  color: ${(props) => props.theme.primary};
+  font-family: 'Poppins_500Medium';
+  font-size: 18px;
 `;

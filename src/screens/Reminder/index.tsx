@@ -60,6 +60,14 @@ const Reminder: React.FC = () => {
   const handleNavigate = useCallback(() => {
     navigate('ReminderForm', { isSchedule: false });
   }, [navigate]);
+
+  const handleDeleteReminder = async (id: number): Promise<void> => {
+    const newReminder = reminders.slice();
+    const index = reminders.findIndex((reminder) => reminder.id === id);
+    newReminder.splice(index, 1);
+    setReminders(newReminder);
+    await RemindersController.delete(id);
+  };
   return (
     <Container marginTop={st.currentHeight}>
       <Header title="Reminder" />
@@ -67,11 +75,13 @@ const Reminder: React.FC = () => {
         data={reminders}
         renderItem={({ item }) => (
           <Task
+            id={item.id}
             title={item.title}
             date={format(new Date(item.year, item.month, item.day), 'dd/MM')}
             isDisabled
             description={item.description}
             ToDoArrayData={item.todos}
+            handleDeleteTask={handleDeleteReminder}
           />
         )}
         keyExtractor={(item) => item.id.toString()}

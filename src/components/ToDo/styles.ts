@@ -13,7 +13,7 @@ export const Container = styled.View`
 export const CheckBox = styled.View<Props>`
   width: ${(props) => (props.disabled ? '15px' : '20px')};
   height: ${(props) => (props.disabled ? '15px' : '20px')};
-  border-radius: 20px;
+  border-radius: ${(props) => (props.disabled ? '20px' : '7px')};
   background-color: ${(props) =>
     props.isDone ? props.theme.primary : 'transparent'};
   border: solid 1px

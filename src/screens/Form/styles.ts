@@ -12,7 +12,7 @@ export const Container = styled.View<Props>`
 `;
 
 export const Topics = styled.View`
-  width: 100%;
+  flex: 1;
   margin-top: 10px;
   min-height: 50px;
 `;

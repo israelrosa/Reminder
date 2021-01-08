@@ -21,6 +21,7 @@ export const databaseInit: () => boolean = () => {
     `CREATE TABLE IF NOT EXISTS schedules(
       id integer primary key autoincrement,
       title text NOT NULL,
+      done integer NOT NULL,
       description text,
       month integer NOT NULL,
       year integer NOT NULL,
@@ -33,8 +34,8 @@ export const databaseInit: () => boolean = () => {
       done int NOT NULL,
       schedule_id integer,
       reminder_id integer,
-      foreign key (schedule_id) references schedules(id),
-      foreign key (reminder_id) references reminders(id)
+      foreign key (schedule_id) references schedules(id) ON DELETE CASCADE,
+      foreign key (reminder_id) references reminders(id) ON DELETE CASCADE
     );`,
     // `
     // INSERT INTO schedules(title, description, month, year, day, timestamp) VALUES ('fasdfgasd', 'idfpsua', 1, 2021, 1, 1523513513);

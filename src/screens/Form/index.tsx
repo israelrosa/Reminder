@@ -159,7 +159,10 @@ const Form: React.FC = () => {
                 <Input
                   placeholder="Describe your task"
                   name="description"
-                  style={{ marginLeft: 25 }}
+                  style={{
+                    marginHorizontal: 25,
+                    flexWrap: 'wrap',
+                  }}
                 />
               </Topics>
               <TopicTitle style={{ marginTop: 10 }}>To Do</TopicTitle>
@@ -196,6 +199,11 @@ const Form: React.FC = () => {
                       onDayPress={(day) => setDate(day.dateString)}
                       minDate={new Date()}
                       markedDates={{ [date]: { selected: true } }}
+                      theme={{
+                        selectedDayBackgroundColor: theme.primary,
+                        arrowColor: theme.primary,
+                        todayTextColor: theme.primary,
+                      }}
                     />
                   </Topics>
                   <Topics>

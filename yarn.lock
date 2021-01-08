@@ -6338,6 +6338,13 @@ react-native-draggable-flatlist@^2.5.1:
   resolved "https://registry.yarnpkg.com/react-native-draggable-flatlist/-/react-native-draggable-flatlist-2.5.1.tgz#62887d07b810ac644f79d3d2861cb858092f7295"
   integrity sha512-VVeTsyiselY5JcXoBwMnbf2yzQDuNukaVTQjuUF7dSrZz5TBCA8ll6O2la1i9qCD2GmXQzczdE51LkNkdZ8Exw==
 
+react-native-draggable@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-draggable/-/react-native-draggable-3.3.0.tgz#6f07c3ad4cff018bf0455fc48dbfe5f0af9b72cd"
+  integrity sha512-aU20CaKBmzXrwE9eTJZ+GDOr52mXLchg5Vydbx5rz8nYXlN+ppHIoTPgyXduyWNwpZ/DR6tyFtMwdgUHpuN6oA==
+  dependencies:
+    prop-types "^15.7.2"
+
 react-native-gesture-handler@~1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/react-native-gesture-handler/-/react-native-gesture-handler-1.7.0.tgz#0ef74a5ba836832e497dc49eb1ce58baa6c617e5"
@@ -6352,6 +6359,11 @@ react-native-iphone-x-helper@^1.3.0:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/react-native-iphone-x-helper/-/react-native-iphone-x-helper-1.3.1.tgz#20c603e9a0e765fd6f97396638bdeb0e5a60b010"
   integrity sha512-HOf0jzRnq2/aFUcdCJ9w9JGzN3gdEg0zFE4FyYlp4jtidqU03D5X7ZegGKfT1EWteR0gPBGp9ye5T5FvSWi9Yg==
+
+react-native-progress-circle@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/react-native-progress-circle/-/react-native-progress-circle-2.1.0.tgz#62bdf31c76962d10c5c14446b61ff7d05cf0d0ec"
+  integrity sha512-VP0s92bgbTMQy4hQzPU4LlGyFj3z5u7i1HYFG8/yzXXfGkX1cxKS4xOlE+OTaObWC99w7Bodi3h8R7En2nQPYw==
 
 react-native-reanimated@^1.13.2:
   version "1.13.2"
