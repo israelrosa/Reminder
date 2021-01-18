@@ -1,4 +1,7 @@
 node_modules/**/*
+yarn.lock
+yarn-error-log
+debug.log
 .expo/*
 npm-debug.*
 *.jks

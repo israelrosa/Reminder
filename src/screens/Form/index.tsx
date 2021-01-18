@@ -3,9 +3,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { FormHandles } from '@unform/core';
 import { Form as FormView } from '@unform/mobile';
-import { format } from 'date-fns';
-import React, { useCallback, useRef, useState } from 'react';
-import { FlatList, StatusBar as st, Text, View } from 'react-native';
+import { format, toDate } from 'date-fns';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, Keyboard, StatusBar as st, Text, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 
 import Button from '../../components/Button';
@@ -15,19 +15,23 @@ import ToDo from '../../components/ToDo';
 import RemindersController from '../../controller/RemindersController';
 import SchedulesController from '../../controller/SchedulesController';
 import ToDoController from '../../controller/ToDoController';
+import IReminder from '../../models/Reminder/interface';
+import ISchedule from '../../models/Schedule/interface';
+import IToDos from '../../models/ToDo/interface';
 import { theme } from '../../styles/theme';
 import { ButtonContainer, Container, Topics, TopicTitle } from './styles';
 
 type RootParams = {
-  ScheduleForm: { isSchedule: boolean };
+  ScheduleForm: { isSchedule: boolean; date: string };
+  ScheduleTask: { scheduleId: number };
+  ReminderTask: { reminderId: number };
 };
 
-type RouteParamsProp = RouteProp<RootParams, 'ScheduleForm'>;
+type RouteParamsIsSchedule = RouteProp<RootParams, 'ScheduleForm'>;
 
-interface IToDo {
-  done: number;
-  description: string;
-}
+type RouteParamsScheduleTask = RouteProp<RootParams, 'ScheduleTask'>;
+
+type RouteParamsReminderTask = RouteProp<RootParams, 'ReminderTask'>;
 
 interface Data {
   title: string;
@@ -36,85 +40,96 @@ interface Data {
 
 const Form: React.FC = () => {
   const [date, setDate] = useState(() => {
-    const dateNow = new Date();
-
-    const dateFormated = format(dateNow, 'yyyy-MM-dd');
-
-    return dateFormated;
+    return format(new Date(), 'yyyy-MM-dd');
   });
   const [timePickerStatus, setTimePickerStatus] = useState(false);
   const [time, setTime] = useState(new Date());
-  const [todos, setTodos] = useState<IToDo[]>([]);
+  const [hideButton, setHideButton] = useState(false);
+  const [todos, setTodos] = useState<IToDos[]>([]);
+  const [delTodos, setDelTodos] = useState<number[]>([]);
+  const [updateTodos, setUpdateTodos] = useState<number[]>([]);
+  const [reminder, setReminder] = useState<IReminder>();
+  const [schedule, setSchedule] = useState<ISchedule>();
   const [todoText, setTodoText] = useState('');
   const { goBack, navigate } = useNavigation();
-  const route = useRoute<RouteParamsProp>();
+  const routeIsSchedule = useRoute<RouteParamsIsSchedule>();
+  const routeSchedule = useRoute<RouteParamsScheduleTask>();
+  const routeReminder = useRoute<RouteParamsReminderTask>();
 
   const formRef = useRef<FormHandles>(null);
 
-  const createTodo = async (id: number, isSchedule: boolean): Promise<void> => {
-    if (isSchedule && todos) {
-      todos.forEach(async (todo) => {
-        await ToDoController.create(Number(todo.done), todo.description, id);
-      });
-    } else {
-      todos?.forEach(async (todo) => {
-        await ToDoController.create(
-          Number(todo.done),
-          todo.description,
-          undefined,
-          id,
+  useEffect(() => {
+    Keyboard.addListener('keyboardDidShow', () => setHideButton(true));
+    Keyboard.addListener('keyboardDidHide', () => setHideButton(false));
+
+    // cleanup function
+    return () => {
+      Keyboard.removeListener('keyboardDidShow', () => setHideButton(true));
+      Keyboard.removeListener('keyboardDidHide', () => setHideButton(false));
+    };
+  }, []);
+
+  useEffect(() => {
+    if (routeIsSchedule.params?.date) {
+      setDate(routeIsSchedule.params.date);
+    }
+    (async () => {
+      if (routeReminder.params?.reminderId) {
+        const newReminder = await RemindersController.showOne(
+          routeReminder.params.reminderId,
         );
-      });
+        const reminderParsed: IReminder = JSON.parse(newReminder);
+        setTodos(reminderParsed.todos);
+        setReminder(reminderParsed);
+      } else if (routeSchedule.params?.scheduleId) {
+        const newSchedule = await SchedulesController.showOne(
+          routeSchedule.params.scheduleId,
+        );
+        const scheduleParsed: ISchedule = JSON.parse(newSchedule);
+        setTime(toDate(Number(scheduleParsed.timestamp)));
+        setDate(
+          `${scheduleParsed.year}-${
+            scheduleParsed.month < 10
+              ? `0${scheduleParsed.month}`
+              : scheduleParsed.month
+          }-${scheduleParsed.day}`,
+        );
+        setTodos(scheduleParsed.todos.slice());
+        setSchedule(scheduleParsed);
+      }
+    })();
+  }, []);
+
+  const createTodo = async (id: number, isSchedule: boolean): Promise<void> => {
+    if (todos.length > 0) {
+      if (isSchedule) {
+        todos.forEach(async (todo) => {
+          await ToDoController.create(Number(todo.done), todo.description, id);
+        });
+      } else {
+        todos?.forEach(async (todo) => {
+          await ToDoController.create(
+            Number(todo.done),
+            todo.description,
+            undefined,
+            id,
+          );
+        });
+      }
     }
   };
-  const handleSubmit = async (data: Data): Promise<void> => {
-    if (route.params.isSchedule) {
-      const newDate = date.split(/-/g);
-      const schedule = await SchedulesController.create(
-        data.title,
-        data.description,
-        time.getTime().toString(),
-        Number(newDate[0]),
-        Number(newDate[1]),
-        Number(newDate[2]),
-      );
 
-      if (schedule.id) {
-        createTodo(schedule.id, true);
-      }
-      schedule.todos = todos;
-      navigate('ScheduleContent', { data: schedule });
-    } else {
-      const dateNow = new Date();
-      const reminder = await RemindersController.create(
-        data.title,
-        dateNow.getFullYear(),
-        dateNow.getMonth() + 1,
-        dateNow.getDate(),
-        data.description,
-      );
-
-      if (reminder.id) {
-        createTodo(reminder.id, false);
-      }
-      reminder.todos = todos;
-      navigate('ReminderContent', { data: reminder });
-    }
-  };
-
-  const handleToDoCreate = useCallback(() => {
+  const handleToDoCreate = (): void => {
     if (
-      !todos ||
-      (todos.findIndex((todo) => todo.description === todoText) === -1 &&
-        todoText !== '')
+      todos &&
+      todoText !== '' &&
+      todos.findIndex((todo) => todo.description === todoText) === -1
     ) {
-      setTodos(
-        todos
-          ? todos.concat([{ done: 0, description: todoText }])
-          : [{ done: 0, description: todoText }],
-      );
+      const newTodos = todos.slice();
+      newTodos.push({ description: todoText, done: 0 });
+      setTodos(newTodos);
     }
-  }, [todos, todoText]);
+  };
 
   const handleDeleteTodo = useCallback(
     (index) => {
@@ -122,18 +137,38 @@ const Form: React.FC = () => {
         const newTodos = todos.slice();
         newTodos?.splice(index, 1);
         setTodos(newTodos);
+        if (
+          (routeReminder.params?.reminderId ||
+            routeSchedule.params?.scheduleId) &&
+          todos[index]
+        ) {
+          setDelTodos([...delTodos, todos[index].id as number]);
+        }
       }
     },
     [todos],
   );
 
   const handleCheckTodo = (index: number): void => {
-    if (todos) {
+    if (todos[index]?.id) {
       const newTodos = todos.slice();
-      if (newTodos[index].done) {
+      if (newTodos[index].done === 1) {
         newTodos[index].done = 0;
       } else {
         newTodos[index].done = 1;
+      }
+      if (
+        updateTodos.findIndex((updTodo) => updTodo === newTodos[index].id) ===
+        -1
+      ) {
+        setUpdateTodos([...updateTodos, newTodos[index].id as number]);
+      } else {
+        const newUpdateTodos = updateTodos.slice();
+        const updTodoIndex = newUpdateTodos.findIndex(
+          (updTodo) => updTodo === newTodos[index].id,
+        );
+        newUpdateTodos.splice(updTodoIndex, 1);
+        setUpdateTodos(newUpdateTodos);
       }
       setTodos(newTodos);
     }
@@ -146,10 +181,153 @@ const Form: React.FC = () => {
     }
   };
 
+  const updateTodo = async (id: number, isSchedule: boolean): Promise<void> => {
+    if (delTodos.length > 0) {
+      delTodos.forEach(async (todoId) => {
+        await ToDoController.delete(todoId);
+      });
+    }
+    if (todos.length > 0) {
+      if (isSchedule && schedule && todos !== schedule.todos) {
+        todos.forEach(async (todo) => {
+          schedule.todos.findIndex((schdltodo) => schdltodo.id === todo.id) ===
+            -1 &&
+            (await ToDoController.create(
+              Number(todo.done),
+              todo.description,
+              id,
+            ));
+        });
+      } else if (reminder && todos !== reminder.todos) {
+        todos.forEach(async (todo) => {
+          reminder.todos.findIndex((rmtodo) => rmtodo.id === todo.id) === -1 &&
+            (await ToDoController.create(
+              Number(todo.done),
+              todo.description,
+              undefined,
+              id,
+            ));
+        });
+      }
+      if (updateTodos.length > 0) {
+        updateTodos.forEach(async (updTodo) => {
+          const todo = todos.find((td) => td.id === updTodo);
+          if (todo) {
+            await ToDoController.update(updTodo, todo.done);
+          }
+        });
+      }
+    }
+  };
+
+  const createSchedule = async (data: Data): Promise<void> => {
+    const newDate = date.split(/-/g);
+    const newSchedule = await SchedulesController.create(
+      data.title,
+      data.description,
+      time.getTime().toString(),
+      Number(newDate[0]),
+      Number(newDate[1]),
+      Number(newDate[2]),
+    );
+
+    if (newSchedule.id) {
+      createTodo(newSchedule.id, true);
+    }
+    newSchedule.todos = todos;
+    navigate('ScheduleContent', {
+      date,
+      schedule: newSchedule,
+      isUpdate: false,
+    });
+  };
+
+  const createReminder = async (data: Data): Promise<void> => {
+    const dateNow = new Date();
+    const newReminder = await RemindersController.create(
+      data.title,
+      dateNow.getFullYear(),
+      dateNow.getMonth() + 1,
+      dateNow.getDate(),
+      data.description,
+    );
+
+    if (newReminder.id) {
+      createTodo(newReminder.id, false);
+    }
+    newReminder.todos = todos;
+    navigate('ReminderContent', { data: newReminder, isUpdate: false });
+  };
+
+  const updateReminder = async (data: Data): Promise<void> => {
+    if (reminder) {
+      const newReminder = await RemindersController.update(
+        reminder.id,
+        data.title,
+        reminder.year,
+        reminder.month,
+        reminder.day,
+        data.description,
+      );
+
+      if (newReminder.id) {
+        await updateTodo(newReminder.id, false);
+      }
+      newReminder.todos = todos;
+      navigate('ReminderContent', { data: newReminder, isUpdate: true });
+    }
+  };
+
+  const updateSchedule = async (data: Data): Promise<void> => {
+    if (schedule) {
+      const newDate = date.split(/-/g);
+      const newSchedule = await SchedulesController.update(
+        schedule.id,
+        data.title,
+        data.description,
+        time.getTime().toString(),
+        Number(newDate[0]),
+        Number(newDate[1]),
+        Number(newDate[2]),
+        schedule.done,
+      );
+
+      if (newSchedule.id) {
+        await updateTodo(newSchedule.id, true);
+      }
+      newSchedule.todos = todos;
+      navigate('ScheduleContent', {
+        date,
+        schedule: newSchedule,
+        isUpdate: true,
+      });
+    }
+  };
+
+  const handleSubmit = async (data: Data): Promise<void> => {
+    if (routeIsSchedule.params.isSchedule) {
+      if (schedule) {
+        await updateSchedule(data);
+      } else {
+        await createSchedule(data);
+      }
+    } else if (reminder) {
+      await updateReminder(data);
+    } else {
+      await createReminder(data);
+    }
+  };
+
   return (
     <Container marginTop={st.currentHeight}>
       <FormView onSubmit={handleSubmit} ref={formRef} style={{ flex: 1 }}>
-        <Header goBack isInput name="title" navigationBack={goBack} />
+        <Header
+          goBack
+          isInput
+          name="title"
+          navigationBack={goBack}
+          defaultValue={schedule?.title ?? reminder?.title ?? ''}
+        />
 
         <FlatList
           ListHeaderComponent={
@@ -159,6 +337,10 @@ const Form: React.FC = () => {
                 <Input
                   placeholder="Describe your task"
                   name="description"
+                  multiline
+                  defaultValue={
+                    schedule?.description ?? reminder?.description ?? ''
+                  }
                   style={{
                     marginHorizontal: 25,
                     flexWrap: 'wrap',
@@ -166,12 +348,22 @@ const Form: React.FC = () => {
                 />
               </Topics>
               <TopicTitle style={{ marginTop: 10 }}>To Do</TopicTitle>
+              <Input
+                name="todo"
+                placeholder="Your To Do"
+                style={{ marginLeft: 25 }}
+                onChangeText={(text) => setTodoText(text)}
+                onSubmitEditing={() => {
+                  handleToDoCreate();
+                  Keyboard.dismiss();
+                }}
+              />
             </>
           }
           data={todos}
           renderItem={({ item, index }) => (
             <ToDo
-              style={{ marginHorizontal: 25, marginBottom: 5 }}
+              style={{ marginHorizontal: 25 }}
               disabled={false}
               done={item.done}
               description={item.description}
@@ -181,17 +373,10 @@ const Form: React.FC = () => {
             />
           )}
           keyExtractor={(item) => item.description}
+          style={{ flex: 1, minHeight: 300 }}
           ListFooterComponent={
             <>
-              <Input
-                name="todo"
-                placeholder="Your To Do"
-                selectTextOnFocus
-                style={{ marginLeft: 25 }}
-                onChangeText={(text) => setTodoText(text)}
-                onSubmitEditing={handleToDoCreate}
-              />
-              {route.params?.isSchedule && (
+              {routeIsSchedule.params?.isSchedule && (
                 <>
                   <Topics>
                     <TopicTitle>Date</TopicTitle>
@@ -252,7 +437,7 @@ const Form: React.FC = () => {
             </>
           }
         />
-        {!route.params?.isSchedule && (
+        {!routeIsSchedule.params?.isSchedule && !hideButton && (
           <ButtonContainer>
             <Button onPress={() => formRef.current?.submitForm()}>Done</Button>
           </ButtonContainer>

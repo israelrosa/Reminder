@@ -10,10 +10,14 @@ interface InputProps extends TextInputProps {
   name: string;
 }
 
-const Input: React.FC<InputProps> = ({ name, ...rest }) => {
+const Input: React.FC<InputProps> = ({
+  name,
+  defaultValue: dfValue,
+  ...rest
+}) => {
   const inputRef = useRef<any>(null);
 
-  const { defaultValue = '', fieldName, registerField } = useField(name);
+  const { defaultValue = dfValue, fieldName, registerField } = useField(name);
 
   useEffect(() => {
     registerField({
@@ -21,14 +25,14 @@ const Input: React.FC<InputProps> = ({ name, ...rest }) => {
       ref: inputRef.current,
       path: 'value',
     });
-  }, [fieldName, registerField]);
+    inputRef.current.value = dfValue;
+  }, [fieldName, registerField, dfValue]);
 
   return (
     <Container
       ref={inputRef}
       placeholderTextColor={theme.secondary}
       defaultValue={defaultValue}
-      multiline
       onChangeText={(text) => {
         inputRef.current.value = text;
       }}

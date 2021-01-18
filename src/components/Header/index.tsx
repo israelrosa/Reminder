@@ -1,35 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { GestureResponderEvent } from 'react-native';
+import { View } from 'react-native';
+import PercentageCircle from 'react-native-progress-circle';
 
+import { theme } from '../../styles/theme';
 import Input from '../Input';
-import { Container, Content, Title } from './styles';
+import { Container, Content, Title, TitlePercentage } from './styles';
 
 interface Props {
   title?: string;
   goBack?: boolean;
-  selection?: boolean;
   edit?: boolean;
+  percentage?: number;
   isInput?: boolean;
+  defaultValue?: string;
   name?: string;
   navigationBack?: () => void;
-  onPressBack?: ((event: GestureResponderEvent) => void) | undefined;
-  onPressForward?: ((event: GestureResponderEvent) => void) | undefined;
-  onPressDate?: ((event: GestureResponderEvent) => void) | undefined;
 }
 
 const Header: React.FC<Props> = ({
   title,
   edit,
   goBack,
-  selection,
+  percentage,
   navigationBack,
   name,
   isInput,
-  onPressBack,
-  onPressForward,
-  onPressDate,
+  defaultValue,
 }) => {
   return (
     <Container>
@@ -44,19 +42,16 @@ const Header: React.FC<Props> = ({
               name="arrow-back"
               size={25}
               color="white"
-              style={{ position: 'absolute', left: 25, top: 0 }}
+              style={{
+                position: 'absolute',
+                left: 25,
+                top: '50%',
+                transform: [{ translateY: -17 }],
+              }}
               onPress={() => navigationBack()}
             />
           )}
-          {selection && (
-            <Ionicons
-              name="chevron-back"
-              color="white"
-              size={25}
-              onPress={onPressBack}
-            />
-          )}
-          {isInput && name ? (
+          {isInput && name && (
             <Input
               name={name}
               placeholder="Title"
@@ -68,9 +63,35 @@ const Header: React.FC<Props> = ({
                 textAlign: 'center',
                 maxWidth: 250,
               }}
+              defaultValue={defaultValue ?? ''}
             />
-          ) : (
-            <Title onPress={onPressDate}>{title}</Title>
+          )}
+
+          {title && <Title>{title}</Title>}
+
+          {percentage && (
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <PercentageCircle
+                percent={percentage > 100 ? 1 : percentage}
+                radius={25}
+                borderWidth={4}
+                shadowColor={theme.primary}
+                bgColor={theme.primary}
+                containerStyle={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Title>{`${percentage > 100 ? 0 : percentage}%`}</Title>
+              </PercentageCircle>
+              <TitlePercentage>Tasks Done</TitlePercentage>
+            </View>
           )}
 
           {edit && (
@@ -79,14 +100,6 @@ const Header: React.FC<Props> = ({
               size={25}
               color="white"
               style={{ position: 'absolute', right: 25, top: 0 }}
-            />
-          )}
-          {selection && (
-            <Ionicons
-              name="chevron-forward"
-              color="white"
-              size={25}
-              onPress={onPressForward}
             />
           )}
         </Content>

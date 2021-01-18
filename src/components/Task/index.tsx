@@ -1,5 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { FlatList, PanResponder, Animated } from 'react-native';
 
 import ToDo from '../ToDo';
@@ -10,7 +9,6 @@ import {
   DateTime,
   Content,
   Description,
-  DeleteContainer,
 } from './styles';
 
 interface ToDoContent {
@@ -22,10 +20,11 @@ interface Props {
   id: number;
   title: string;
   date: string;
-  isDisabled: boolean;
   description?: string;
   ToDoArrayData: ToDoContent[];
-  handleDeleteTask: (id: number) => Promise<void>;
+  borderColor: string;
+  handleTask: (id: number) => Promise<void>;
+  handleNavigate: () => void;
 }
 
 const Task: React.FC<Props> = ({
@@ -33,11 +32,13 @@ const Task: React.FC<Props> = ({
   description,
   date,
   title,
-  isDisabled,
   ToDoArrayData,
-  handleDeleteTask,
+  handleTask,
+  handleNavigate,
+  borderColor,
 }) => {
   const pan = useRef(new Animated.Value(0)).current;
+  const [transparency, setTransparency] = useState(0);
 
   const panResponder = React.useRef(
     PanResponder.create({
@@ -50,9 +51,12 @@ const Task: React.FC<Props> = ({
       onPanResponderGrant: (evt, gestureState) => {
         pan.setOffset(gestureState.dx);
       },
-      onPanResponderMove: Animated.event([null, { dx: pan }], {
-        useNativeDriver: false,
-      }),
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dx < 300) {
+          pan.setValue(gestureState.dx - (gestureState.dx / 150) * 75);
+          setTransparency(gestureState.dx / 150);
+        }
+      },
       onPanResponderTerminationRequest: (evt, gestureState) => true,
       onPanResponderRelease: async (evt, gestureState) => {
         Animated.spring(pan, {
@@ -60,9 +64,18 @@ const Task: React.FC<Props> = ({
           friction: 5,
           useNativeDriver: false,
         }).start();
-        if (gestureState.dx > 75) {
-          handleDeleteTask(id);
+        if (gestureState.dx > 150) {
+          handleTask(id);
         }
+        if (
+          gestureState.dx < 10 &&
+          gestureState.dx > -10 &&
+          gestureState.dy < 10 &&
+          gestureState.dy > -10
+        ) {
+          handleNavigate();
+        }
+        setTransparency(0);
       },
       onShouldBlockNativeResponder: (evt, gestureState) => {
         return true;
@@ -75,10 +88,9 @@ const Task: React.FC<Props> = ({
       style={{ transform: [{ translateX: pan }], position: 'relative' }}
       {...panResponder.panHandlers}
     >
-      <DeleteContainer style={{ transform: [{ translateY: -25 }] }}>
-        <Ionicons name="close-circle-outline" size={40} color="red" />
-      </DeleteContainer>
       <Container
+        borderColor={borderColor}
+        transparency={transparency}
         style={{
           shadowColor: '#000',
           shadowOffset: {
@@ -100,13 +112,13 @@ const Task: React.FC<Props> = ({
           <DateTime>{date}</DateTime>
         </Header>
         <Content>
-          <Description>{description}</Description>
+          {description !== '' && <Description>{description}</Description>}
           <FlatList
             data={ToDoArrayData}
             renderItem={({ item }) => (
               <ToDo
                 done={item.done}
-                disabled={isDisabled}
+                disabled
                 description={item.description}
                 close={false}
               />

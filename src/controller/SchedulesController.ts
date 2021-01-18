@@ -1,30 +1,17 @@
 import { format } from 'date-fns';
 
+import ISchedule from 'models/Schedule/interface';
+import IToDos from 'models/ToDo/interface';
+
 import Schedule from '../models/Schedule';
 import ScheduleService from '../services/ScheduleServices';
 // import ToDoService from '../services/ToDoServices';
-
-interface ScheduleFormat {
-  id: number;
-  title: string;
-  description: string;
-  done: number;
-  timestamp: string;
-  year: number;
-  month: number;
-  day: number;
-  todos: ToDos[];
-}
-interface ToDos {
-  done: number;
-  description: string;
-}
-
 interface ScheduleContent {
   id: number;
   title: string;
   description: string;
   done: number;
+  todo_id: number;
   todo_description: string;
   todo_done: number;
   timestamp: string;
@@ -39,7 +26,7 @@ interface ScheduleData {
   };
 }
 
-type ScheduleDate = [date: string, schedule: ScheduleFormat[]];
+type ScheduleDate = [date: string, schedule: ISchedule[]];
 
 type ScheduleArrayDate = ScheduleDate[];
 
@@ -67,10 +54,10 @@ export default class SchedulesController {
   static async delete(id: number): Promise<number> {
     const result = await ScheduleService.delete(id);
 
-    if (result === 0) {
-      throw new Error('Unable to delete the schedule.');
+    if (result > 0) {
+      return result;
     }
-    return result;
+    throw new Error('Unable to delete the schedule.');
   }
 
   static async showAllByDate(
@@ -82,8 +69,8 @@ export default class SchedulesController {
 
     const schedule: ScheduleData = JSON.parse(data);
 
-    const index: ScheduleFormat[] = [];
-    const result: ScheduleFormat[] = [];
+    const index: ISchedule[] = [];
+    const result: ISchedule[] = [];
     schedule.rows._array.forEach((row) => {
       if (!(row.id in index)) {
         index[row.id] = {
@@ -94,7 +81,7 @@ export default class SchedulesController {
           month: row.month,
           timestamp: row.timestamp,
           title: row.title,
-          todos: [] as ToDos[],
+          todos: [] as IToDos[],
           year: row.year,
         };
         result.push(index[row.id]);
@@ -115,8 +102,8 @@ export default class SchedulesController {
 
     const schedule: ScheduleData = JSON.parse(data);
 
-    const index: ScheduleFormat[] = [];
-    const formated: ScheduleFormat[] = [];
+    const index: ISchedule[] = [];
+    const formatted: ISchedule[] = [];
     schedule.rows._array.forEach((row) => {
       if (!(row.id in index)) {
         index[row.id] = {
@@ -127,10 +114,10 @@ export default class SchedulesController {
           month: row.month,
           timestamp: row.timestamp,
           title: row.title,
-          todos: [] as ToDos[],
+          todos: [] as IToDos[],
           year: row.year,
         };
-        formated.push(index[row.id]);
+        formatted.push(index[row.id]);
       }
       if (row.todo_description !== null && row.done !== null) {
         index[row.id].todos.push({
@@ -142,7 +129,7 @@ export default class SchedulesController {
 
     const result: ScheduleArrayDate = [];
 
-    formated.forEach((schdl) => {
+    formatted.forEach((schdl) => {
       const date = format(
         new Date(schdl.year, schdl.month - 1, schdl.day),
         'yyyy-MM-dd',
@@ -154,14 +141,40 @@ export default class SchedulesController {
         result[indx][1].push(schdl);
       }
     });
-
     return JSON.stringify(Object.fromEntries(result));
   }
 
   static async showOne(id: number): Promise<string> {
-    const data = await ScheduleService.findById(id);
+    const data = await ScheduleService.findOne(id);
 
-    return JSON.stringify(data);
+    const schedule: ScheduleData = JSON.parse(data);
+
+    const index: ISchedule[] = [];
+    const result: ISchedule[] = [];
+    schedule.rows._array.forEach((row) => {
+      if (!(row.id in index)) {
+        index[row.id] = {
+          id: row.id,
+          day: row.day,
+          description: row.description,
+          done: row.done,
+          month: row.month,
+          timestamp: row.timestamp,
+          title: row.title,
+          todos: [] as IToDos[],
+          year: row.year,
+        };
+        result.push(index[row.id]);
+      }
+      if (row.todo_description !== null && row.done !== null) {
+        index[row.id].todos.push({
+          id: row.todo_id,
+          description: row.todo_description,
+          done: row.todo_done,
+        });
+      }
+    });
+    return JSON.stringify(result[0]);
   }
 
   static async update(
@@ -172,6 +185,7 @@ export default class SchedulesController {
     year: number,
     month: number,
     day: number,
+    done: number,
   ): Promise<Schedule> {
     const schedule = new Schedule({
       timestamp,
@@ -179,6 +193,7 @@ export default class SchedulesController {
       description,
       id,
       day,
+      done,
       month,
       year,
     });
@@ -186,5 +201,9 @@ export default class SchedulesController {
     await ScheduleService.update(schedule);
 
     return schedule;
+  }
+
+  static async updateDone(done: number, id: number): Promise<void> {
+    await ScheduleService.updateDone(done, id);
   }
 }

@@ -5,7 +5,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 
 import Form from '../screens/Form';
-import Home from '../screens/Home';
 import Reminder from '../screens/Reminder';
 import Schedule from '../screens/Schedule';
 //import Setting from '../screens/Setting';
@@ -46,24 +45,12 @@ const router: React.FC = () => {
       <Tab.Navigator
         tabBarOptions={{
           activeTintColor: theme.primary,
+          keyboardHidesTabBar: true,
           inactiveTintColor: theme.primary,
           showLabel: false,
           style: { shadowOpacity: 0, elevation: 0 },
         }}
       >
-        <Tab.Screen
-          name="Home"
-          component={Home}
-          options={{
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                name={focused ? 'home' : 'home-outline'}
-                color={color}
-                size={30}
-              />
-            ),
-          }}
-        />
         <Tab.Screen
           name="Reminder"
           component={ReminderScreens}

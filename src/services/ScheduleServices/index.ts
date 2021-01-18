@@ -11,7 +11,7 @@ export default class ScheculeService {
 
   static create(schedule: Schedule): Promise<Schedule> {
     const newSchedule = schedule;
-    return new Promise((resolve, reject) =>
+    return new Promise((resolve) =>
       this.db.transaction(
         (tx) => {
           tx.executeSql(
@@ -41,7 +41,7 @@ export default class ScheculeService {
     month: number,
     day: number,
   ): Promise<string> {
-    return new Promise((resolve, reject) =>
+    return new Promise((resolve) =>
       this.db.transaction(
         (tx) => {
           tx.executeSql(
@@ -56,7 +56,7 @@ export default class ScheculeService {
   }
 
   static findAll(): Promise<string> {
-    return new Promise((resolve, reject) =>
+    return new Promise((resolve) =>
       this.db.transaction(
         (tx) => {
           tx.executeSql(
@@ -70,20 +70,23 @@ export default class ScheculeService {
     );
   }
 
-  static findById(id: number): Promise<SQLResultSet> {
-    return new Promise((resolve, reject) =>
-      this.db.transaction((tx) => {
-        tx.executeSql(
-          `SELECT * FROM ${this.table} LEFT JOIN todos ON ${this.table}.id = todos.id where id = ?`,
-          [id],
-          (_, rows) => resolve(rows),
-        );
-      }),
+  static findOne(id: number): Promise<string> {
+    return new Promise((resolve) =>
+      this.db.transaction(
+        (tx) => {
+          tx.executeSql(
+            `SELECT a.id, a.title, a.description, a.done, a.year, a.month, a.day, a.timestamp, b.id as todo_id, b.description AS todo_description, b.done as todo_done FROM ${this.table} as a LEFT JOIN todos as b on a.id = b.schedule_id WHERE a.id = ?`,
+            [id],
+            (_, rows) => resolve(JSON.stringify(rows)),
+          );
+        },
+        (err) => console.log(`error:${err}`),
+      ),
     );
   }
 
   static async delete(id: number): Promise<number> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.db.transaction(
         (tx) =>
           tx.executeSql(
@@ -99,19 +102,34 @@ export default class ScheculeService {
   }
 
   static update(schedule: Schedule): Promise<SQLResultSet> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.db.transaction((tx) =>
         tx.executeSql(
-          `UPDATE ${this.table} set title = ?, description = ?, year = ?, month = ?, day = ?, timestamp = ? where id = ?`,
+          `UPDATE ${this.table} set title = ?, description = ?, done = ?, year = ?, month = ?, day = ?, timestamp = ? where id = ?`,
           [
             schedule.title,
             schedule.description,
+            schedule.done,
             schedule.year,
             schedule.month,
             schedule.day,
             schedule.timestamp,
             schedule.id,
           ],
+          (_, row) => {
+            resolve(row);
+          },
+        ),
+      );
+    });
+  }
+
+  static updateDone(done: number, id: number): Promise<SQLResultSet> {
+    return new Promise((resolve) => {
+      this.db.transaction((tx) =>
+        tx.executeSql(
+          `UPDATE ${this.table} set done = ? where id = ?`,
+          [done, id],
           (_, row) => {
             resolve(row);
           },

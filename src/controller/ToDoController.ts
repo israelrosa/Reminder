@@ -18,25 +18,16 @@ export default class ToDoController {
     );
   }
 
-  static async update(
-    id: number,
-    done: number,
-    description: string,
-  ): Promise<ToDo> {
-    const todo = new ToDo(id, description, done);
-
-    await ToDoService.update(todo);
-
-    return todo;
+  static async update(id: number, done: number): Promise<void> {
+    await ToDoService.update(id, done);
   }
 
-  static async findScheduleTodos(schedule_id: number): Promise<string> {
-    const data = await ToDoService.findScheduleTodos(schedule_id);
+  static async delete(id: number): Promise<number> {
+    const rows = await ToDoService.delete(id);
 
-    return JSON.stringify(data);
-  }
-
-  static delete(id: number): void {
-    ToDoService.delete(id);
+    if (rows > 0) {
+      return rows;
+    }
+    throw new Error('Unable to delete the to do.');
   }
 }

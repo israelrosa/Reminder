@@ -1,20 +1,17 @@
 import styled from 'styled-components/native';
 
-export const Container = styled.View`
+interface Props {
+  borderColor: string;
+  transparency: number;
+}
+
+export const Container = styled.View<Props>`
   background-color: #fff;
   margin: 5px;
   border-radius: 30px;
   overflow: visible;
-`;
-
-export const DeleteContainer = styled.View`
-  position: absolute;
-  height: 50px;
-  width: 50px;
-  justify-content: center;
-  align-items: center;
-  top: 50%;
-  left: -60px;
+  border: 1px solid
+    ${(props) => `rgba(${props.borderColor}, ${props.transparency})`};
 `;
 
 export const Header = styled.View`

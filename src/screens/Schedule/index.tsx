@@ -1,15 +1,17 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+/* eslint-disable no-useless-computed-key */
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { format, toDate } from 'date-fns';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useReducer, useState } from 'react';
-import { FlatList, StatusBar as st } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StatusBar as st, Text, View } from 'react-native';
+import { Agenda, AgendaItemsMap } from 'react-native-calendars';
 
 import CreateButton from '../../components/CreateButton';
+import EmptyData from '../../components/EmptyData';
 import Header from '../../components/Header';
 import Task from '../../components/Task';
 import SchedulesController from '../../controller/SchedulesController';
-import { dateInitialArgs, reducerDate } from '../../reducers/reducerDate';
+import { theme } from '../../styles/theme';
 import { Container } from './styles';
 
 interface ToDos {
@@ -30,96 +32,167 @@ interface ScheduleContent {
 }
 
 type RootParamList = {
-  Form: { data: ScheduleContent };
+  Form: {
+    date: string;
+    schedule: ScheduleContent;
+    isUpdate: boolean;
+  };
 };
 
 type RouteParams = RouteProp<RootParamList, 'Form'>;
 
 const Schedule: React.FC = () => {
   const { navigate } = useNavigation();
-  const [schedules, setSchedules] = useState<ScheduleContent[]>([]);
-  const [datePicker, setDatePicker] = useState(false);
-  const [date, dispatch] = useReducer(reducerDate, dateInitialArgs);
+  const [date, setDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [percentage, setPercentage] = useState(0);
+  const [schedules, setSchedules] = useState<AgendaItemsMap<ScheduleContent>>(
+    {},
+  );
   const route = useRoute<RouteParams>();
 
+  //Puxa dados do banco
   useEffect(() => {
-    (async (): Promise<void> => {
-      const data = await SchedulesController.showAllByDate(
-        date.getFullYear(),
-        date.getMonth() + 1,
-        date.getDate(),
-      );
-      if (data) {
-        const schedule = JSON.parse(data);
+    (async () => {
+      const data = await SchedulesController.showAll();
 
-        setSchedules(schedule);
-      }
+      const scheduleArray: AgendaItemsMap<ScheduleContent> = JSON.parse(data);
+      setSchedules(scheduleArray);
     })();
-  }, [date]);
+  }, []);
 
+  //Introduz novos todos e atualizações dentro do state.
   useEffect(() => {
-    const newSchedules = schedules.slice();
-    if (
-      route.params &&
-      schedules.findIndex((schdl) => schdl.id === route.params.data.id) === -1
-    ) {
-      newSchedules.push(route.params.data);
-      setSchedules(newSchedules);
+    if (route.params) {
+      const scheduleArray = Object.entries(schedules).slice();
+
+      const newDate = scheduleArray.findIndex(
+        (schdlarray) => schdlarray[0] === route.params.date,
+      );
+
+      const previousDate = scheduleArray.findIndex(
+        (schdlarray) =>
+          schdlarray[1].findIndex(
+            (schdl) => schdl.id === route.params.schedule.id,
+          ) !== -1,
+      );
+
+      //verifica se já foi criado a nova data no schedule.
+      if (newDate !== -1) {
+        const scheduleIndex = scheduleArray[newDate][1]?.findIndex(
+          (schdl) => schdl.id === route.params.schedule.id,
+        );
+        // Verificando se o schedule não foi introduzido no array.
+        if (scheduleArray[newDate] && scheduleIndex === -1) {
+          scheduleArray[newDate][1].push(route.params.schedule);
+        } else if (route.params.isUpdate) {
+          scheduleArray[newDate][1].splice(scheduleIndex, 1);
+          scheduleArray[newDate][1].push(route.params.schedule);
+        }
+        if (
+          scheduleArray[previousDate] &&
+          scheduleArray[previousDate][0] !== route.params.date
+        ) {
+          const previousSchedule = scheduleArray[previousDate][1].findIndex(
+            (schdl) => schdl.id === route.params.schedule.id,
+          );
+          if (scheduleArray[previousDate][1].length > 1) {
+            scheduleArray[previousDate][1].splice(previousSchedule);
+          } else {
+            scheduleArray.splice(previousDate, 1);
+          }
+          setSchedules(Object.fromEntries(scheduleArray));
+        }
+        setSchedules(Object.fromEntries(scheduleArray));
+      } else if (route.params.isUpdate) {
+        const previousSchedule = scheduleArray[previousDate][1].findIndex(
+          (schdl) => schdl.id === route.params.schedule.id,
+        );
+
+        if (scheduleArray[previousDate][1].length > 1) {
+          scheduleArray[previousDate][1].splice(previousSchedule);
+          scheduleArray.push([route.params.date, [route.params.schedule]]);
+
+          setSchedules(Object.fromEntries(scheduleArray));
+        } else {
+          scheduleArray.splice(previousDate, 1);
+          scheduleArray.push([route.params.date, [route.params.schedule]]);
+          setSchedules(Object.fromEntries(scheduleArray));
+        }
+      } else {
+        scheduleArray.push([route.params.date, [route.params.schedule]]);
+
+        setSchedules(Object.fromEntries(scheduleArray));
+      }
     }
   }, [route.params]);
-  const handleNavigate = useCallback(() => {
-    navigate('ScheduleForm', { isSchedule: true });
-  }, [navigate]);
 
-  const handleChangeDate = (newDate: Date | undefined): void => {
-    setDatePicker(false);
-    if (newDate) {
-      dispatch({ type: 'CHANGE_DATE', date: newDate });
-    }
-  };
-
-  const handleDeleteSchedule = async (id: number): Promise<void> => {
-    await SchedulesController.delete(id).then(() => {
-      const newSchedule = schedules.slice();
-      const index = newSchedule.findIndex((schedule) => schedule.id === id);
-      newSchedule.splice(index, 1);
-      setSchedules(newSchedule);
+  //Calcula a porcentagem de tarefas concluídas.
+  useEffect(() => {
+    schedules[date]?.forEach((schdl) => {
+      if (schdl.done === 1) {
+        setPercentage((percentage + schdl.done) / schedules[date].length);
+      }
     });
-    // .catch((err) => console.log(err));
+  }, [date]);
+
+  const handleDoneTask = async (id: number): Promise<void> => {
+    await SchedulesController.updateDone(1, id);
   };
+
   return (
     <Container marginTop={st.currentHeight}>
-      <Header
-        selection
-        onPressDate={() => setDatePicker(true)}
-        onPressBack={() => dispatch({ type: 'REDUCE_DAY' })}
-        onPressForward={() => dispatch({ type: 'ADD_DAY' })}
-        title={format(date, 'dd/MM')}
-      />
-      {datePicker && (
-        <DateTimePicker
-          value={date}
-          style={{ flex: 1 }}
-          onChange={(value, newDate) => handleChangeDate(newDate)}
-        />
-      )}
-      <FlatList
-        data={schedules}
-        renderItem={({ item }) => (
+      <Header percentage={percentage || 101} />
+      <Agenda
+        items={schedules}
+        renderItem={(item) => (
           <Task
+            ToDoArrayData={item.todos}
+            date={format(toDate(Number(item.timestamp)), 'p')}
             id={item.id}
             title={item.title}
-            date={format(new Date(toDate(Number(item.timestamp))), 'p')}
-            isDisabled
             description={item.description}
-            ToDoArrayData={item.todos}
-            handleDeleteTask={handleDeleteSchedule}
+            handleTask={handleDoneTask}
+            handleNavigate={() => {
+              navigate('ScheduleForm', {
+                scheduleId: schedules[date]?.find(
+                  (schdl) => schdl.id === item.id,
+                )?.id,
+                isSchedule: true,
+              });
+            }}
+            borderColor="0, 255, 0"
           />
         )}
-        keyExtractor={(item) => item.id.toString()}
-        style={{ marginTop: 15, flex: 1 }}
+        markingType="custom"
+        selected={format(new Date(), 'yyyy-MM-dd')}
+        pastScrollRange={12}
+        futureScrollRange={12}
+        onDayPress={(day) => setDate(day.dateString)}
+        rowHasChanged={(r1, r2) => {
+          return r1 !== r2;
+        }}
+        renderEmptyDate={() => (
+          <View>
+            <Text>No service on this date</Text>
+          </View>
+        )}
+        renderEmptyData={() => {
+          return <EmptyData>No task found for this day.</EmptyData>;
+        }}
+        theme={{
+          calendarBackground: 'white',
+          backgroundColor: 'transparent',
+          selectedDayBackgroundColor: theme.primary,
+          todayTextColor: theme.primary,
+          agendaKnobColor: theme.primary,
+          agendaDayTextColor: theme.primary,
+          agendaDayNumColor: theme.primary,
+          agendaTodayColor: theme.primary,
+        }}
       />
-      <CreateButton onPress={handleNavigate} />
+      <CreateButton
+        onPress={() => navigate('ScheduleForm', { isSchedule: true, date })}
+      />
       <StatusBar backgroundColor="#7E84FF" style="light" />
     </Container>
   );

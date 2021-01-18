@@ -18,7 +18,7 @@ export const CheckBox = styled.View<Props>`
     props.isDone ? props.theme.primary : 'transparent'};
   border: solid 1px
     ${(props) => {
-      if (props.isDone) {
+      if (props.isDone === 1) {
         return props.theme.primary;
       }
       if (props.disabled) {

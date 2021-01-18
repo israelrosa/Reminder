@@ -27,34 +27,32 @@ export default class ToDoService {
     );
   }
 
-  static findScheduleTodos(schedule_id: number): Promise<string> {
-    return new Promise((resolve, reject) =>
-      this.db.transaction((tx) => {
-        tx.executeSql(
-          `SELECT * FROM ${this.table} WHERE schedule_id = ?`,
-          [schedule_id],
-          (_, rows) => resolve(JSON.stringify(rows)),
-        );
-      }),
-    );
-  }
-
-  static delete(id: number): void {
-    this.db.transaction((tx) =>
-      tx.executeSql(`DELETE FROM ${this.table} WHERE id = ?`, [id]),
-    );
-  }
-
-  static update(todo: ToDo): Promise<SQLResultSet> {
-    return new Promise((resolve, reject) => {
+  static async delete(id: number): Promise<number> {
+    return new Promise((resolve) => {
       this.db.transaction((tx) =>
         tx.executeSql(
-          `UPDATE ${this.table} set active = ?, description = ? where id = ?`,
-          [todo.done, todo.description, todo.id],
-          (_, row) => {
-            resolve(row);
+          `DELETE FROM ${this.table} WHERE id = ?`,
+          [id],
+          (_, { rowsAffected }) => {
+            resolve(rowsAffected);
           },
         ),
+      );
+    });
+  }
+
+  static update(id: number, done: number): Promise<SQLResultSet> {
+    return new Promise((resolve, reject) => {
+      this.db.transaction(
+        (tx) =>
+          tx.executeSql(
+            `UPDATE ${this.table} set done = ? where id = ?`,
+            [done, id],
+            (_, row) => {
+              resolve(row);
+            },
+          ),
+        (err) => console.log(err),
       );
     });
   }
