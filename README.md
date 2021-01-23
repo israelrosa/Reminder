@@ -1,7 +1,7 @@
 ## About
 This project is a mobile app for schedules and reminders, I intend to put more features in the future, for example, a stopwatch to time user activities.
 
-## Libs
+## Frameworks and Libs 
 - [Typescript](https://www.typescriptlang.org/)
 - [Expo](https://expo.io/)
 - [Expo SQLite](https://docs.expo.io/versions/latest/sdk/sqlite/)
