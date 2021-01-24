@@ -11,6 +11,7 @@ This project is a mobile app for schedules and reminders, I intend to put more f
 - [Styled Components](https://styled-components.com/)
 - [Unform](https://unform.dev/)
 - [Yup](https://github.com/jquense/yup)
+- [Date-fns](https://date-fns.org/)
 - [Prettier](https://prettier.io/)
 - [Eslint](https://eslint.org/)
 
