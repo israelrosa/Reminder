@@ -13,11 +13,14 @@ interface InputProps extends TextInputProps {
 const Input: React.FC<InputProps> = ({
   name,
   defaultValue: dfValue,
+  placeholder,
   ...rest
 }) => {
   const inputRef = useRef<any>(null);
 
-  const { defaultValue = dfValue, fieldName, registerField } = useField(name);
+  const { defaultValue = dfValue, fieldName, registerField, error } = useField(
+    name,
+  );
 
   useEffect(() => {
     registerField({
@@ -33,6 +36,7 @@ const Input: React.FC<InputProps> = ({
       ref={inputRef}
       placeholderTextColor={theme.secondary}
       defaultValue={defaultValue}
+      placeholder={error ?? placeholder}
       onChangeText={(text) => {
         inputRef.current.value = text;
       }}

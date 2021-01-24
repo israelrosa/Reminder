@@ -12,27 +12,31 @@ interface Props {
   title?: string;
   goBack?: boolean;
   edit?: boolean;
+  error?: boolean;
   percentage?: number;
   isInput?: boolean;
   defaultValue?: string;
   name?: string;
   navigationBack?: () => void;
+  onPressTrash?: () => void;
 }
 
 const Header: React.FC<Props> = ({
   title,
   edit,
+  error,
   goBack,
   percentage,
   navigationBack,
   name,
   isInput,
   defaultValue,
+  onPressTrash,
 }) => {
   return (
     <Container>
       <LinearGradient
-        colors={['#7E84FF', '#B6B9FF']}
+        colors={['#7e84ff', error ? theme.error : '#B6B9FF']}
         start={{ x: 0.0, y: 0.2 }}
         style={{ flex: 1, justifyContent: 'center' }}
       >
@@ -46,7 +50,7 @@ const Header: React.FC<Props> = ({
                 position: 'absolute',
                 left: 25,
                 top: '50%',
-                transform: [{ translateY: -17 }],
+                transform: [{ translateY: -13 }],
               }}
               onPress={() => navigationBack()}
             />
@@ -82,13 +86,16 @@ const Header: React.FC<Props> = ({
                 radius={25}
                 borderWidth={4}
                 shadowColor={theme.primary}
+                color={percentage > 50 ? theme.sucess : theme.error}
                 bgColor={theme.primary}
                 containerStyle={{
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Title>{`${percentage > 100 ? 0 : percentage}%`}</Title>
+                <Title style={{ fontSize: 13 }}>{`${
+                  percentage > 100 ? 0 : percentage
+                }%`}</Title>
               </PercentageCircle>
               <TitlePercentage>Tasks Done</TitlePercentage>
             </View>
@@ -99,7 +106,13 @@ const Header: React.FC<Props> = ({
               name="trash-outline"
               size={25}
               color="white"
-              style={{ position: 'absolute', right: 25, top: 0 }}
+              style={{
+                position: 'absolute',
+                right: 25,
+                top: '50%',
+                transform: [{ translateY: -13 }],
+              }}
+              onPress={onPressTrash}
             />
           )}
         </Content>

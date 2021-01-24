@@ -5,17 +5,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar as st, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 
-import IReminder from 'models/Reminder/interface';
-
 import CreateButton from '../../components/CreateButton';
 import EmptyData from '../../components/EmptyData';
 import Header from '../../components/Header';
 import Task from '../../components/Task';
 import RemindersController from '../../controller/RemindersController';
+import IReminder from '../../models/Reminder/interface';
+import { theme } from '../../styles/theme';
 import { Container } from './styles';
 
 type RootParams = {
-  Form: { data: IReminder; isUpdate: boolean };
+  Form: { data: IReminder; isUpdate: boolean; deleteId: number };
 };
 
 type RouteParam = RouteProp<RootParams, 'Form'>;
@@ -52,6 +52,13 @@ const Reminder: React.FC = () => {
         reminder[index] = route.params.data;
 
         setReminders(reminder);
+      } else if (route.params.deleteId) {
+        const reminder = reminders.slice();
+        const index = reminder.findIndex(
+          (rmndr) => rmndr.id === route.params.deleteId,
+        );
+        reminder.splice(index);
+        setReminders(reminder);
       }
     }
   }, [route.params]);
@@ -84,7 +91,7 @@ const Reminder: React.FC = () => {
               handleNavigate={() => {
                 navigate('ReminderForm', { reminderId: item.id });
               }}
-              borderColor="255, 0, 0"
+              color={theme.error}
             />
           )}
           keyExtractor={(item) => item.id.toString()}

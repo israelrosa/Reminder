@@ -3,4 +3,6 @@ export const theme = {
   secondary: '#AAAAAA',
   textPrimary: '#242229',
   black: '#242229',
+  error: '#ffc6e1',
+  sucess: '#cbffe9',
 };

@@ -7,6 +7,7 @@ import { format, toDate } from 'date-fns';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Keyboard, StatusBar as st, Text, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import * as yup from 'yup';
 
 import Button from '../../components/Button';
 import Header from '../../components/Header';
@@ -19,6 +20,7 @@ import IReminder from '../../models/Reminder/interface';
 import ISchedule from '../../models/Schedule/interface';
 import IToDos from '../../models/ToDo/interface';
 import { theme } from '../../styles/theme';
+import getValidationErrors from '../../utils/getValidationErrors';
 import { ButtonContainer, Container, Topics, TopicTitle } from './styles';
 
 type RootParams = {
@@ -42,9 +44,10 @@ const Form: React.FC = () => {
   const [date, setDate] = useState(() => {
     return format(new Date(), 'yyyy-MM-dd');
   });
+  const [isEdit, setIsEdit] = useState(false);
+  const [error, setError] = useState(false);
   const [timePickerStatus, setTimePickerStatus] = useState(false);
   const [time, setTime] = useState(new Date());
-  const [hideButton, setHideButton] = useState(false);
   const [todos, setTodos] = useState<IToDos[]>([]);
   const [delTodos, setDelTodos] = useState<number[]>([]);
   const [updateTodos, setUpdateTodos] = useState<number[]>([]);
@@ -59,22 +62,12 @@ const Form: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
 
   useEffect(() => {
-    Keyboard.addListener('keyboardDidShow', () => setHideButton(true));
-    Keyboard.addListener('keyboardDidHide', () => setHideButton(false));
-
-    // cleanup function
-    return () => {
-      Keyboard.removeListener('keyboardDidShow', () => setHideButton(true));
-      Keyboard.removeListener('keyboardDidHide', () => setHideButton(false));
-    };
-  }, []);
-
-  useEffect(() => {
     if (routeIsSchedule.params?.date) {
       setDate(routeIsSchedule.params.date);
     }
     (async () => {
       if (routeReminder.params?.reminderId) {
+        setIsEdit(true);
         const newReminder = await RemindersController.showOne(
           routeReminder.params.reminderId,
         );
@@ -82,6 +75,7 @@ const Form: React.FC = () => {
         setTodos(reminderParsed.todos);
         setReminder(reminderParsed);
       } else if (routeSchedule.params?.scheduleId) {
+        setIsEdit(true);
         const newSchedule = await SchedulesController.showOne(
           routeSchedule.params.scheduleId,
         );
@@ -150,7 +144,7 @@ const Form: React.FC = () => {
   );
 
   const handleCheckTodo = (index: number): void => {
-    if (todos[index]?.id) {
+    if (todos[index]) {
       const newTodos = todos.slice();
       if (newTodos[index].done === 1) {
         newTodos[index].done = 0;
@@ -304,18 +298,56 @@ const Form: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (data: Data): Promise<void> => {
-    if (routeIsSchedule.params.isSchedule) {
-      if (schedule) {
-        await updateSchedule(data);
-      } else {
-        await createSchedule(data);
-      }
-    } else if (reminder) {
-      await updateReminder(data);
-    } else {
-      await createReminder(data);
+  const handleDelete = async (): Promise<void> => {
+    if (routeSchedule.params?.scheduleId) {
+      await SchedulesController.delete(routeSchedule.params.scheduleId);
+      navigate('ScheduleContent', {
+        deleteId: routeSchedule.params.scheduleId,
+        date: format(
+          new Date(
+            schedule?.year as number,
+            (schedule?.month as number) - 1,
+            schedule?.day as number,
+          ),
+          'yyyy-MM-dd',
+        ),
+      });
+    } else if (routeReminder.params?.reminderId) {
+      await RemindersController.delete(routeReminder.params.reminderId);
+      navigate('ReminderContent', {
+        deleteId: routeReminder.params.reminderId,
+      });
     }
+  };
+
+  const handleSubmit = async (data: Data): Promise<void> => {
+    const schema = yup.object().shape({
+      title: yup.string().required('The title is required.'),
+      description: yup.string().notRequired(),
+    });
+
+    schema
+      .validate(data, { abortEarly: false })
+      .then(async () => {
+        setError(false);
+        if (routeIsSchedule.params.isSchedule) {
+          if (schedule) {
+            await updateSchedule(data);
+          } else {
+            await createSchedule(data);
+          }
+        } else if (reminder) {
+          await updateReminder(data);
+        } else {
+          await createReminder(data);
+        }
+      })
+      .catch((err) => {
+        const errors = getValidationErrors(err);
+        setError(true);
+
+        formRef.current?.setErrors(errors);
+      });
   };
 
   return (
@@ -324,6 +356,9 @@ const Form: React.FC = () => {
         <Header
           goBack
           isInput
+          edit={isEdit}
+          error={error}
+          onPressTrash={handleDelete}
           name="title"
           navigationBack={goBack}
           defaultValue={schedule?.title ?? reminder?.title ?? ''}
@@ -437,7 +472,7 @@ const Form: React.FC = () => {
             </>
           }
         />
-        {!routeIsSchedule.params?.isSchedule && !hideButton && (
+        {!routeIsSchedule.params?.isSchedule && (
           <ButtonContainer>
             <Button onPress={() => formRef.current?.submitForm()}>Done</Button>
           </ButtonContainer>

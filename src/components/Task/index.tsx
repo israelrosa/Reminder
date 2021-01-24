@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import { FlatList, PanResponder, Animated } from 'react-native';
 
 import ToDo from '../ToDo';
@@ -22,7 +22,8 @@ interface Props {
   date: string;
   description?: string;
   ToDoArrayData: ToDoContent[];
-  borderColor: string;
+  color: string;
+  isDone?: boolean;
   handleTask: (id: number) => Promise<void>;
   handleNavigate: () => void;
 }
@@ -35,7 +36,8 @@ const Task: React.FC<Props> = ({
   ToDoArrayData,
   handleTask,
   handleNavigate,
-  borderColor,
+  color,
+  isDone,
 }) => {
   const pan = useRef(new Animated.Value(0)).current;
   const [transparency, setTransparency] = useState(0);
@@ -52,7 +54,7 @@ const Task: React.FC<Props> = ({
         pan.setOffset(gestureState.dx);
       },
       onPanResponderMove: (evt, gestureState) => {
-        if (gestureState.dx < 300) {
+        if (gestureState.dx < 300 && gestureState.dx > 0) {
           pan.setValue(gestureState.dx - (gestureState.dx / 150) * 75);
           setTransparency(gestureState.dx / 150);
         }
@@ -68,10 +70,10 @@ const Task: React.FC<Props> = ({
           handleTask(id);
         }
         if (
-          gestureState.dx < 10 &&
-          gestureState.dx > -10 &&
-          gestureState.dy < 10 &&
-          gestureState.dy > -10
+          gestureState.dx < 5 &&
+          gestureState.dx > -5 &&
+          gestureState.dy < 5 &&
+          gestureState.dy > -5
         ) {
           handleNavigate();
         }
@@ -89,8 +91,10 @@ const Task: React.FC<Props> = ({
       {...panResponder.panHandlers}
     >
       <Container
-        borderColor={borderColor}
-        transparency={transparency}
+        colors={[color, '#fff']}
+        locations={[0, 10]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: isDone ? 0.1 : transparency, y: 0 }}
         style={{
           shadowColor: '#000',
           shadowOffset: {
@@ -130,4 +134,4 @@ const Task: React.FC<Props> = ({
     </Animated.View>
   );
 };
-export default Task;
+export default memo(Task);

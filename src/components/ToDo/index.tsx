@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { memo } from 'react';
 import { GestureResponderEvent, ViewProps } from 'react-native';
 
 import { theme } from '../../styles/theme';
@@ -46,4 +46,4 @@ const ToDo: React.FC<ToDoContent> = ({
   );
 };
 
-export default ToDo;
+export default memo(ToDo);

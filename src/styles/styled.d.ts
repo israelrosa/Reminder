@@ -6,5 +6,7 @@ declare module 'styled-components' {
     secondary: string;
     textPrimary: string;
     black: string;
+    error: string;
+    sucess: string;
   }
 }

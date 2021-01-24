@@ -36,6 +36,7 @@ type RootParamList = {
     date: string;
     schedule: ScheduleContent;
     isUpdate: boolean;
+    deleteId: number;
   };
 };
 
@@ -65,7 +66,7 @@ const Schedule: React.FC = () => {
     if (route.params) {
       const scheduleArray = Object.entries(schedules).slice();
 
-      const newDate = scheduleArray.findIndex(
+      const hasDate = scheduleArray.findIndex(
         (schdlarray) => schdlarray[0] === route.params.date,
       );
 
@@ -76,33 +77,51 @@ const Schedule: React.FC = () => {
           ) !== -1,
       );
 
-      //verifica se já foi criado a nova data no schedule.
-      if (newDate !== -1) {
-        const scheduleIndex = scheduleArray[newDate][1]?.findIndex(
-          (schdl) => schdl.id === route.params.schedule.id,
-        );
-        // Verificando se o schedule não foi introduzido no array.
-        if (scheduleArray[newDate] && scheduleIndex === -1) {
-          scheduleArray[newDate][1].push(route.params.schedule);
-        } else if (route.params.isUpdate) {
-          scheduleArray[newDate][1].splice(scheduleIndex, 1);
-          scheduleArray[newDate][1].push(route.params.schedule);
-        }
-        if (
-          scheduleArray[previousDate] &&
-          scheduleArray[previousDate][0] !== route.params.date
-        ) {
-          const previousSchedule = scheduleArray[previousDate][1].findIndex(
+      // Verifica se já foi criado a nova data no schedule se já foi ele entra.
+      if (hasDate !== -1) {
+        // Verifica se é para deletar o schedule.
+        if (route.params.deleteId) {
+          const schdlIndex = scheduleArray[hasDate][1].findIndex(
+            (schdl) => schdl.id === route.params.deleteId,
+          );
+          scheduleArray[hasDate][1].splice(schdlIndex, 1);
+          if (scheduleArray[hasDate][1].length === 0) {
+            scheduleArray.splice(hasDate, 1);
+          }
+          setSchedules(Object.fromEntries(scheduleArray));
+          // Se não ele cria um schedule
+        } else {
+          const scheduleIndex = scheduleArray[hasDate][1]?.findIndex(
             (schdl) => schdl.id === route.params.schedule.id,
           );
-          if (scheduleArray[previousDate][1].length > 1) {
-            scheduleArray[previousDate][1].splice(previousSchedule);
-          } else {
-            scheduleArray.splice(previousDate, 1);
+          // Se o schedule não foi introduzido no array ele entra.
+          if (scheduleArray[hasDate] && scheduleIndex === -1) {
+            scheduleArray[hasDate][1].push(route.params.schedule);
+          } else if (route.params.isUpdate) {
+            // Se for para atualizar ele entra.
+            scheduleArray[hasDate][1][scheduleIndex] = route.params.schedule;
+            // Verifica se a data do schedule mudou, se não mudou ele não entra.
+            if (
+              scheduleArray[previousDate] &&
+              scheduleArray[previousDate][0] !== route.params.date
+            ) {
+              // Verifica se ainda há outros schedules na data anterior além do schedule antigo, se tiver, ele vai deletar apenas o schedule antigo.
+              if (scheduleArray[previousDate][1].length > 1) {
+                const previousSchedule = scheduleArray[
+                  previousDate
+                ][1].findIndex(
+                  (schdl) => schdl.id === route.params.schedule.id,
+                );
+                scheduleArray[previousDate][1].splice(previousSchedule);
+              } else {
+                // Se não ele deleta a data inteira.
+                scheduleArray.splice(previousDate, 1);
+              }
+              setSchedules(Object.fromEntries(scheduleArray));
+            }
           }
           setSchedules(Object.fromEntries(scheduleArray));
         }
-        setSchedules(Object.fromEntries(scheduleArray));
       } else if (route.params.isUpdate) {
         const previousSchedule = scheduleArray[previousDate][1].findIndex(
           (schdl) => schdl.id === route.params.schedule.id,
@@ -127,16 +146,40 @@ const Schedule: React.FC = () => {
   }, [route.params]);
 
   //Calcula a porcentagem de tarefas concluídas.
+  const calcPercentage = (): void => {
+    if (schedules[date]) {
+      let total = 0;
+      schedules[date]?.forEach((schdl) => {
+        if (schdl.done === 1) {
+          total += schdl.done;
+        }
+      });
+      setPercentage((total / schedules[date].length) * 100);
+    } else {
+      setPercentage(0);
+    }
+  };
+
   useEffect(() => {
-    schedules[date]?.forEach((schdl) => {
-      if (schdl.done === 1) {
-        setPercentage((percentage + schdl.done) / schedules[date].length);
-      }
-    });
-  }, [date]);
+    calcPercentage();
+  }, [date, route.params]);
 
   const handleDoneTask = async (id: number): Promise<void> => {
     await SchedulesController.updateDone(1, id);
+
+    const schedulesArray = Object.entries(schedules).slice();
+
+    let scheduleIndex = 0;
+
+    const arrayIndex = schedulesArray.findIndex((schdlarray) => {
+      scheduleIndex = schdlarray[1].findIndex((schdl) => schdl.id === id);
+      return scheduleIndex !== -1;
+    });
+
+    schedulesArray[arrayIndex][1][scheduleIndex].done = 1;
+
+    setSchedules(Object.fromEntries(schedulesArray));
+    calcPercentage();
   };
 
   return (
@@ -152,24 +195,23 @@ const Schedule: React.FC = () => {
             title={item.title}
             description={item.description}
             handleTask={handleDoneTask}
+            isDone={Boolean(item.done)}
             handleNavigate={() => {
               navigate('ScheduleForm', {
-                scheduleId: schedules[date]?.find(
-                  (schdl) => schdl.id === item.id,
-                )?.id,
+                scheduleId: item.id,
                 isSchedule: true,
               });
             }}
-            borderColor="0, 255, 0"
+            color={theme.sucess}
           />
         )}
         markingType="custom"
         selected={format(new Date(), 'yyyy-MM-dd')}
-        pastScrollRange={12}
+        pastScrollRange={2}
         futureScrollRange={12}
         onDayPress={(day) => setDate(day.dateString)}
         rowHasChanged={(r1, r2) => {
-          return r1 !== r2;
+          return r1 !== r2 || r1.done === r2.done;
         }}
         renderEmptyDate={() => (
           <View>
