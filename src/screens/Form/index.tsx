@@ -388,9 +388,10 @@ const Form: React.FC = () => {
                 placeholder="Your To Do"
                 style={{ marginLeft: 25 }}
                 onChangeText={(text) => setTodoText(text)}
+                value={todoText}
                 onSubmitEditing={() => {
                   handleToDoCreate();
-                  Keyboard.dismiss();
+                  setTodoText('');
                 }}
               />
             </>
