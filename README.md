@@ -34,10 +34,10 @@ This project is a mobile app for schedules and reminders, I intend to put more f
 - [ ] Option to choose the frequency of the schedule task;
 - [ ] Create Table Dates;
 - [ ] Create Table Stopwatch;
-- [ ] Do Reminder data validation with yup;
-- [ ] Do Schedule data validation with yup;
+- [x] Do Reminder data validation with yup;
+- [x] Do Schedule data validation with yup;
 - [ ] Error Handling;
-- [ ] Change the schedule color when status change;
+- [x] Change the schedule color when status change;
 
 ## Contact
 Israel Rosa - [LinkedIn](https://www.linkedin.com/in/piresr-israel/) - [Instagram](https://www.instagram.com/israelp.rosa/) - piresr.israel@gmail.com
