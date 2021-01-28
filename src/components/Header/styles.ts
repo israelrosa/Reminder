@@ -3,8 +3,8 @@ import styled from 'styled-components/native';
 export const Container = styled.View`
   width: 100%;
   height: 80px;
-  border-bottom-left-radius: 50px;
-  border-bottom-right-radius: 50px;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
   overflow: hidden;
   z-index: 2;
 `;

@@ -5,7 +5,7 @@ import { FormHandles } from '@unform/core';
 import { Form as FormView } from '@unform/mobile';
 import { format, toDate } from 'date-fns';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Keyboard, StatusBar as st, Text, View } from 'react-native';
+import { FlatList, StatusBar as st, Text, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import * as yup from 'yup';
 

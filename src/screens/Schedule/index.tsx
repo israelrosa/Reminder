@@ -207,7 +207,7 @@ const Schedule: React.FC = () => {
         )}
         markingType="custom"
         selected={format(new Date(), 'yyyy-MM-dd')}
-        pastScrollRange={2}
+        pastScrollRange={1}
         futureScrollRange={12}
         onDayPress={(day) => setDate(day.dateString)}
         rowHasChanged={(r1, r2) => {
